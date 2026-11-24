@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Send, Sparkles, UserRound } from 'lucide-react';
 import { API } from '../../shared/site';
-import { PublicLayout } from './Layout';
+import { Header } from './Layout';
 
 export function ChatPage() {
   const [input, setInput] = useState('');
@@ -15,11 +15,26 @@ export function ChatPage() {
   const [messages, setMessages] = useState([
     { role: 'assistant', content: 'Hello! I’m the Lish AI Labs assistant. Ask me about our services, projects, training programmes or opportunities.' },
   ]);
-  const messagesEndRef = useRef(null);
+  const chatMessagesRef = useRef(null);
+  const supportMessagesRef = useRef(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (chatMessagesRef.current) {
+      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+    }
   }, [messages, busy]);
+  useEffect(() => {
+    if (supportMessagesRef.current) {
+      supportMessagesRef.current.scrollTop = supportMessagesRef.current.scrollHeight;
+    }
+  }, [supportMessages]);
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
   useEffect(() => {
     if (!conversationKey) return undefined;
     let active = true;
@@ -75,7 +90,6 @@ export function ChatPage() {
     }
   };
   const sendSupportReply = async (event) => {
-    event.preventEvent?.();
     event.preventDefault();
     const message = supportReply.trim();
     if (!message || !conversationKey) return;
@@ -96,7 +110,9 @@ export function ChatPage() {
   };
 
   return (
-    <PublicLayout>
+    <>
+      <Header />
+      <main className="chat-main">
       <section className="chat-page">
         <div className="chat-page-heading">
           <span className="section-kicker">Lish AI Assistant</span>
@@ -108,7 +124,7 @@ export function ChatPage() {
           {showHumanForm && (
             conversationKey
               ? <div className="human-agent-thread">
-                  <div className="human-thread-messages">
+                  <div ref={supportMessagesRef} className="human-thread-messages">
                     {supportMessages.map((message) => (
                       <div key={message.id} className={`chat-page-message ${message.sender === 'admin' ? 'assistant' : 'user'}`}>
                         <small>{message.sender === 'admin' ? 'Support team' : 'You'}</small>
@@ -133,12 +149,11 @@ export function ChatPage() {
         </div>
         <div className="chat-page-shell">
           <div className="chat-page-header"><Sparkles size={20} /><div><strong>Lish AI Assistant</strong><span>Online</span></div></div>
-          <div className="chat-page-messages" role="log" aria-live="polite">
+          <div ref={chatMessagesRef} className="chat-page-messages" role="log" aria-live="polite">
             {messages.map((message, index) => (
               <div key={index} className={`chat-page-message ${message.role}`}>{message.content}</div>
             ))}
             {busy && <div className="chat-page-message assistant">Thinking...</div>}
-            <div ref={messagesEndRef} />
           </div>
           <form className="chat-page-form" onSubmit={send}>
             <input value={input} onChange={(event) => setInput(event.target.value)} placeholder="Ask about Lish AI Labs..." aria-label="Chat message" />
@@ -146,6 +161,7 @@ export function ChatPage() {
           </form>
         </div>
       </section>
-    </PublicLayout>
+      </main>
+    </>
   );
 }
