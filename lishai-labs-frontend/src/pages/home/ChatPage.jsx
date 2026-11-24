@@ -1,13 +1,28 @@
 import { useEffect, useRef, useState } from 'react';
-import { Send, Sparkles, UserRound } from 'lucide-react';
+import { Send, Sparkles, UserRound, X } from 'lucide-react';
 import { API } from '../../shared/site';
 import { Header } from './Layout';
+
+const CANNOT_ANSWER_PATTERN =
+  /\b(i (can't|cannot|can not|could not|couldn't|don't|do not|am unable to|was unable to) (answer|help|find|verify|provide|confirm|assist|access)|not sure|no information|don't have (enough |that |any )?information|do not have (enough |that |any )?information|outside (my|the) (scope|knowledge)|beyond (my|the)|unable to answer|speak (to|with) a human|human agent|contact (our |the )?(team|support)|reach out to (our |the )?(team|support)|please try again)\b/i;
+
+const ASKING_FOR_HUMAN_PATTERN =
+  /\b(human|real person|live agent|support agent|talk to someone|speak to someone|speak to a human|customer care|customer support)\b/i;
+
+function shouldOfferHuman(replyText, responseOk, data, userMessage) {
+  if (!responseOk) return true;
+  if (data?.needsHuman || data?.escalate || data?.fallback || data?.unanswered) return true;
+  if (CANNOT_ANSWER_PATTERN.test(replyText || '')) return true;
+  if (ASKING_FOR_HUMAN_PATTERN.test(userMessage || '')) return true;
+  return false;
+}
 
 export function ChatPage() {
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [humanForm, setHumanForm] = useState({ name: '', email: '', message: '' });
   const [humanStatus, setHumanStatus] = useState('');
+  const [showHumanOffer, setShowHumanOffer] = useState(() => Boolean(localStorage.getItem('lishai_support_key')));
   const [showHumanForm, setShowHumanForm] = useState(false);
   const [conversationKey, setConversationKey] = useState(() => localStorage.getItem('lishai_support_key') || '');
   const [supportMessages, setSupportMessages] = useState([]);
@@ -29,13 +44,13 @@ export function ChatPage() {
     if (chatMessagesRef.current) {
       chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
     }
-  }, [messages, busy]);
+  }, [messages, busy, showHumanOffer, showHumanForm]);
 
   useEffect(() => {
     if (supportMessagesRef.current) {
       supportMessagesRef.current.scrollTop = supportMessagesRef.current.scrollHeight;
     }
-  }, [supportMessages]);
+  }, [supportMessages, showHumanForm]);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -74,6 +89,7 @@ export function ChatPage() {
 
   useEffect(() => {
     if (!conversationKey) return undefined;
+    setShowHumanOffer(true);
     let active = true;
     const load = () => fetch(`${API}/support/conversations/${encodeURIComponent(conversationKey)}`)
       .then((response) => response.ok ? response.json() : Promise.reject())
@@ -98,9 +114,17 @@ export function ChatPage() {
         body: JSON.stringify({ message, history: messages }),
       });
       const data = await response.json();
-      setMessages((current) => [...current, { role: 'assistant', content: response.ok ? data.reply : data.message }]);
+      const replyText = response.ok ? data.reply : data.message;
+      setMessages((current) => [...current, { role: 'assistant', content: replyText }]);
+
+      if (shouldOfferHuman(replyText, response.ok, data, message)) {
+        setShowHumanOffer(true);
+        setHumanForm((current) => (current.message ? current : { ...current, message }));
+      }
     } catch (_) {
       setMessages((current) => [...current, { role: 'assistant', content: 'I could not answer right now. Please try again shortly.' }]);
+      setShowHumanOffer(true);
+      setHumanForm((current) => (current.message ? current : { ...current, message }));
     } finally {
       setBusy(false);
     }
@@ -195,7 +219,7 @@ export function ChatPage() {
           max-width: 1240px;
           margin: 0 auto;
           display: grid;
-          grid-template-columns: minmax(280px, 0.88fr) minmax(0, 1.35fr);
+          grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1.4fr);
           gap: 2rem;
           align-items: stretch;
           box-sizing: border-box;
@@ -204,64 +228,31 @@ export function ChatPage() {
         .chat-viewport .chat-page-heading {
           display: flex;
           flex-direction: column;
-          gap: 0.85rem;
+          justify-content: center;
+          gap: 0.9rem;
           min-height: 0;
-          overflow-y: auto;
-          padding-right: 0.25rem;
-          -webkit-overflow-scrolling: touch;
+          padding-right: 0.5rem;
+        }
+
+        .chat-viewport .chat-page-heading .section-kicker {
+          letter-spacing: 0.08em !important;
+          word-spacing: normal !important;
+          line-height: 1.4 !important;
         }
 
         .chat-viewport .chat-page-heading h1 {
           margin: 0;
-          line-height: 1.2;
+          letter-spacing: normal !important;
+          word-spacing: normal !important;
+          font-kerning: normal;
+          line-height: 1.28 !important;
         }
 
         .chat-viewport .chat-page-heading > p {
           margin: 0;
-          line-height: 1.55;
-        }
-
-        .chat-viewport .human-agent-button {
-          align-self: flex-start;
-          display: inline-flex;
-          align-items: center;
-          gap: 0.5rem;
-          margin-top: 0.25rem;
-        }
-
-        .chat-viewport .human-agent-form,
-        .chat-viewport .human-agent-thread {
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-          margin-top: 0.35rem;
-        }
-
-        .chat-viewport .human-thread-messages {
-          max-height: 220px;
-          overflow-y: auto;
-          display: flex;
-          flex-direction: column;
-          gap: 0.65rem;
-          padding: 0.5rem 0.25rem;
-          -webkit-overflow-scrolling: touch;
-        }
-
-        .chat-viewport .human-thread-form {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-
-        .chat-viewport .human-thread-form input,
-        .chat-viewport .human-agent-form input,
-        .chat-viewport .human-agent-form textarea {
-          font-size: 16px;
-        }
-
-        .chat-viewport .human-thread-form input {
-          flex: 1 1 auto;
-          min-width: 0;
+          letter-spacing: normal !important;
+          word-spacing: normal !important;
+          line-height: 1.6 !important;
         }
 
         .chat-viewport .chat-page-shell {
@@ -292,13 +283,141 @@ export function ChatPage() {
           display: flex;
           flex-direction: column;
           gap: 0.85rem;
-          padding: 1.15rem;
+          padding: 1.1rem;
         }
 
         .chat-viewport .chat-page-message {
-          line-height: 1.5;
+          line-height: 1.55;
+          letter-spacing: normal !important;
+          word-spacing: normal !important;
           word-break: break-word;
           overflow-wrap: anywhere;
+        }
+
+        /* In-chat human escalation bar & drawer (directly above typing space) */
+        .chat-viewport .inchat-human-zone {
+          flex-shrink: 0;
+          border-top: 1px solid rgba(15, 23, 42, 0.08);
+          background: #f8fafc;
+        }
+
+        .chat-viewport .inchat-human-banner {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 0.75rem;
+          padding: 0.6rem 0.95rem;
+        }
+
+        .chat-viewport .inchat-human-prompt {
+          font-size: 0.85rem;
+          color: #475569;
+          line-height: 1.35;
+          letter-spacing: normal !important;
+          word-spacing: normal !important;
+        }
+
+        .chat-viewport .inchat-human-trigger {
+          flex-shrink: 0;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.45rem;
+          padding: 0.45rem 0.85rem;
+          border-radius: 999px;
+          border: 1px solid #1d4ed8;
+          background: #ffffff;
+          color: #1d4ed8;
+          font-size: 0.85rem;
+          font-weight: 600;
+          cursor: pointer;
+          white-space: nowrap;
+        }
+
+        .chat-viewport .inchat-human-trigger:hover {
+          background: #eff6ff;
+        }
+
+        .chat-viewport .inchat-human-panel {
+          padding: 0.8rem 0.95rem 0.9rem;
+          max-height: 290px;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+          display: flex;
+          flex-direction: column;
+          gap: 0.7rem;
+          box-sizing: border-box;
+        }
+
+        .chat-viewport .inchat-human-panel-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 0.5rem;
+        }
+
+        .chat-viewport .inchat-human-panel-title {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.45rem;
+          font-size: 0.9rem;
+          font-weight: 600;
+          color: #0f172a;
+        }
+
+        .chat-viewport .inchat-human-close {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 30px;
+          height: 30px;
+          border-radius: 999px;
+          border: 1px solid rgba(15, 23, 42, 0.12);
+          background: #ffffff;
+          color: #334155;
+          cursor: pointer;
+        }
+
+        .chat-viewport .human-agent-form,
+        .chat-viewport .human-agent-thread {
+          display: flex;
+          flex-direction: column;
+          gap: 0.65rem;
+          margin: 0;
+        }
+
+        .chat-viewport .human-agent-form label {
+          display: flex;
+          flex-direction: column;
+          gap: 0.3rem;
+          font-size: 0.84rem;
+          color: #334155;
+        }
+
+        .chat-viewport .human-thread-messages {
+          max-height: 150px;
+          overflow-y: auto;
+          display: flex;
+          flex-direction: column;
+          gap: 0.55rem;
+          padding: 0.25rem;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        .chat-viewport .human-thread-form {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .chat-viewport .human-thread-form input,
+        .chat-viewport .human-agent-form input,
+        .chat-viewport .human-agent-form textarea {
+          font-size: 16px;
+        }
+
+        .chat-viewport .human-thread-form input {
+          flex: 1 1 auto;
+          min-width: 0;
         }
 
         .chat-viewport .chat-page-form {
@@ -328,39 +447,35 @@ export function ChatPage() {
 
         @media (max-width: 959px) {
           .chat-viewport .chat-main {
-            padding: calc(var(--chat-fixed-header, 0px) + 0.75rem) 0.75rem 0.75rem !important;
+            padding: calc(var(--chat-fixed-header, 0px) + 0.6rem) 0.75rem 0.65rem !important;
           }
 
           .chat-viewport .chat-page {
             display: flex;
             flex-direction: column;
-            gap: 0.75rem;
+            gap: 0.65rem;
           }
 
           .chat-viewport .chat-page-heading {
             flex: 0 0 auto;
-            gap: 0.45rem;
-            padding: 0 0.25rem;
-            max-height: 42%;
+            gap: 0.35rem;
+            padding: 0.1rem 0.25rem 0;
+          }
+
+          .chat-viewport .chat-page-heading .section-kicker {
+            font-size: 0.72rem;
           }
 
           .chat-viewport .chat-page-heading h1 {
-            font-size: 1.25rem;
+            font-size: 1.2rem !important;
+            line-height: 1.3 !important;
+            letter-spacing: normal !important;
+            word-spacing: normal !important;
           }
 
           .chat-viewport .chat-page-heading > p {
-            font-size: 0.9rem;
-            line-height: 1.4;
-          }
-
-          .chat-viewport .human-agent-button {
-            padding: 0.55rem 0.9rem;
-            font-size: 0.9rem;
-            margin-top: 0.15rem;
-          }
-
-          .chat-viewport .human-thread-messages {
-            max-height: 150px;
+            font-size: 0.88rem !important;
+            line-height: 1.45 !important;
           }
 
           .chat-viewport .chat-page-shell {
@@ -373,8 +488,17 @@ export function ChatPage() {
           }
 
           .chat-viewport .chat-page-messages {
-            padding: 0.9rem;
+            padding: 0.85rem;
             gap: 0.75rem;
+          }
+
+          .chat-viewport .inchat-human-banner {
+            padding: 0.55rem 0.75rem;
+          }
+
+          .chat-viewport .inchat-human-panel {
+            padding: 0.75rem;
+            max-height: 240px;
           }
 
           .chat-viewport .chat-page-form {
@@ -383,9 +507,9 @@ export function ChatPage() {
           }
         }
 
+        /* Hide the outer intro when the mobile soft keyboard shrinks the viewport */
         @media (max-width: 959px) and (max-height: 580px) {
-          .chat-viewport .chat-page-heading > p,
-          .chat-viewport .chat-page-heading .section-kicker {
+          .chat-viewport .chat-page-heading {
             display: none;
           }
         }
@@ -415,34 +539,6 @@ export function ChatPage() {
             <span className="section-kicker">Lish AI Assistant</span>
             <h1>Ask us anything about Lish AI Labs.</h1>
             <p>Get answers from our services, projects, opportunities and company information.</p>
-            <button type="button" className="human-agent-button" onClick={() => setShowHumanForm((current) => !current)}>
-              <UserRound size={18} /> Speak to a human agent
-            </button>
-            {showHumanForm && (
-              conversationKey
-                ? <div className="human-agent-thread">
-                    <div ref={supportMessagesRef} className="human-thread-messages">
-                      {supportMessages.map((message) => (
-                        <div key={message.id} className={`chat-page-message ${message.sender === 'admin' ? 'assistant' : 'user'}`}>
-                          <small>{message.sender === 'admin' ? 'Support team' : 'You'}</small>
-                          {message.message}
-                        </div>
-                      ))}
-                    </div>
-                    <form className="human-thread-form" onSubmit={sendSupportReply}>
-                      <input required value={supportReply} onChange={(event) => setSupportReply(event.target.value)} placeholder="Reply to support..." />
-                      <button type="submit" className="button button-primary">Send</button>
-                    </form>
-                    {humanStatus && <p className="form-status">{humanStatus}</p>}
-                  </div>
-                : <form className="human-agent-form" onSubmit={requestHuman}>
-                    <label>Your name<input required value={humanForm.name} onChange={(event) => setHumanForm({ ...humanForm, name: event.target.value })} /></label>
-                    <label>Email<input type="email" required value={humanForm.email} onChange={(event) => setHumanForm({ ...humanForm, email: event.target.value })} /></label>
-                    <label>How can we help?<textarea required rows={3} value={humanForm.message} onChange={(event) => setHumanForm({ ...humanForm, message: event.target.value })} /></label>
-                    <button type="submit" className="button button-primary">Send to support</button>
-                    {humanStatus && <p className="form-status">{humanStatus}</p>}
-                  </form>
-            )}
           </div>
           <div className="chat-page-shell">
             <div className="chat-page-header"><Sparkles size={20} /><div><strong>Lish AI Assistant</strong><span>Online</span></div></div>
@@ -452,6 +548,67 @@ export function ChatPage() {
               ))}
               {busy && <div className="chat-page-message assistant">Thinking...</div>}
             </div>
+
+            {showHumanOffer && (
+              <div className="inchat-human-zone">
+                {!showHumanForm ? (
+                  <div className="inchat-human-banner">
+                    <span className="inchat-human-prompt">
+                      {conversationKey ? 'Your support chat is active.' : 'Need help from our team?'}
+                    </span>
+                    <button
+                      type="button"
+                      className="inchat-human-trigger"
+                      onClick={() => setShowHumanForm(true)}
+                    >
+                      <UserRound size={16} /> {conversationKey ? 'Open human chat' : 'Speak to a human'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="inchat-human-panel">
+                    <div className="inchat-human-panel-header">
+                      <span className="inchat-human-panel-title">
+                        <UserRound size={16} /> Human Support
+                      </span>
+                      <button
+                        type="button"
+                        className="inchat-human-close"
+                        onClick={() => setShowHumanForm(false)}
+                        aria-label="Close human support"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                    {conversationKey ? (
+                      <div className="human-agent-thread">
+                        <div ref={supportMessagesRef} className="human-thread-messages">
+                          {supportMessages.map((message) => (
+                            <div key={message.id} className={`chat-page-message ${message.sender === 'admin' ? 'assistant' : 'user'}`}>
+                              <small>{message.sender === 'admin' ? 'Support team' : 'You'}</small>
+                              {message.message}
+                            </div>
+                          ))}
+                        </div>
+                        <form className="human-thread-form" onSubmit={sendSupportReply}>
+                          <input required value={supportReply} onChange={(event) => setSupportReply(event.target.value)} placeholder="Reply to support..." />
+                          <button type="submit" className="button button-primary">Send</button>
+                        </form>
+                        {humanStatus && <p className="form-status">{humanStatus}</p>}
+                      </div>
+                    ) : (
+                      <form className="human-agent-form" onSubmit={requestHuman}>
+                        <label>Your name<input required value={humanForm.name} onChange={(event) => setHumanForm({ ...humanForm, name: event.target.value })} /></label>
+                        <label>Email<input type="email" required value={humanForm.email} onChange={(event) => setHumanForm({ ...humanForm, email: event.target.value })} /></label>
+                        <label>How can we help?<textarea required rows={2} value={humanForm.message} onChange={(event) => setHumanForm({ ...humanForm, message: event.target.value })} /></label>
+                        <button type="submit" className="button button-primary">Send to support</button>
+                        {humanStatus && <p className="form-status">{humanStatus}</p>}
+                      </form>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             <form className="chat-page-form" onSubmit={send}>
               <input
                 value={input}
