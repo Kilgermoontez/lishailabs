@@ -11,7 +11,9 @@ const site = require('../controllers/SiteController');
 const chat = require('../controllers/ChatController');
 
 const router = express.Router();
-const uploadDir = path.join(__dirname, '../../uploads');
+const uploadDir = process.env.UPLOAD_DIR
+  ? path.resolve(process.env.UPLOAD_DIR)
+  : path.join(__dirname, '../../uploads');
 fs.mkdirSync(uploadDir, { recursive: true });
 const upload = multer({
   storage: multer.diskStorage({
