@@ -671,3 +671,86 @@
   .demo-showcase { grid-template-columns:1fr }
   .demo-admin-card { grid-template-columns:1fr }
 }
+
+/* Mobile & tablet stacking for opportunity detail and application pages */
+@media (max-width: 980px) {
+  .apply-page,
+  .opportunity-detail-page {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 32px;
+    min-height: auto;
+    width: 100%;
+    max-width: 100%;
+    padding: 48px 24px 64px;
+    overflow-x: clip;
+  }
+
+  .apply-page > *,
+  .opportunity-detail-page > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 720px) {
+  .apply-page,
+  .opportunity-detail-page {
+    padding: 32px 16px 56px;
+    gap: 24px;
+  }
+
+  .apply-copy h1 {
+    font-size: clamp(30px, 8vw, 38px);
+    line-height: 1.15;
+    letter-spacing: -0.5px;
+    margin: 12px 0 16px;
+    overflow-wrap: anywhere;
+  }
+
+  .apply-form,
+  .opportunity-application-form {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 20px 16px;
+    gap: 14px;
+    width: 100%;
+  }
+
+  .apply-form label,
+  .apply-form label:nth-of-type(7),
+  .apply-form label:nth-of-type(8),
+  .opportunity-application-form label,
+  .document-upload,
+  .apply-form .button,
+  .opportunity-application-form .button,
+  .apply-form .form-status,
+  .opportunity-application-form .form-status {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+
+  .document-upload {
+    position: relative;
+  }
+
+  .apply-form input,
+  .apply-form textarea,
+  .apply-form select,
+  .opportunity-application-form input,
+  .opportunity-application-form textarea,
+  .opportunity-application-form select {
+    width: 100%;
+    max-width: 100%;
+    font-size: 16px;
+  }
+
+  .document-upload > span {
+    width: 100%;
+    white-space: nowrap;
+  }
+
+  .apply-form .button,
+  .opportunity-application-form .button {
+    width: 100%;
+  }
+}
