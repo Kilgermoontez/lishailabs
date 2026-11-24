@@ -1,4 +1,5 @@
 require('dotenv').config();
+const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -8,6 +9,12 @@ const path = require('path');
 const apiRoutes = require('./routes/apiRoutes');
 
 const app = express();
+
+const uploadsDir = process.env.UPLOAD_DIR
+  ? path.resolve(process.env.UPLOAD_DIR)
+  : path.join(__dirname, '../uploads');
+
+fs.mkdirSync(uploadsDir, { recursive: true });
 
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -33,7 +40,7 @@ app.use('/api', rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 }));
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/uploads', express.static(uploadsDir));
 app.use('/api', apiRoutes);
 
 app.get('/api/health', (_, res) => res.json({ status: 'ok', service: 'Lishai Labs API' }));
@@ -44,4 +51,3 @@ app.use((error, _req, res, _next) => {
 });
 
 module.exports = app;
-
