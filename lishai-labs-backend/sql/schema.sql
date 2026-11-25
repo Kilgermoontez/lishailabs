@@ -111,6 +111,18 @@ CREATE TABLE IF NOT EXISTS admin_otps (
   CONSTRAINT fk_admin_otps_admin FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS admin_password_resets (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  admin_id INT UNSIGNED NOT NULL,
+  code_hash VARCHAR(255) NOT NULL,
+  expires_at DATETIME NOT NULL,
+  attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  consumed TINYINT(1) NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_admin_password_resets_admin_created (admin_id, created_at),
+  CONSTRAINT fk_admin_password_resets_admin FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS knowledge_documents (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   title VARCHAR(255) NOT NULL,
@@ -151,6 +163,22 @@ CREATE TABLE IF NOT EXISTS opportunity_applications (
   INDEX idx_opportunity_applications_opportunity (opportunity_id),
   INDEX idx_opportunity_applications_status (status),
   CONSTRAINT fk_opportunity_applications_opportunity FOREIGN KEY (opportunity_id) REFERENCES opportunities(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS admin_activity_logs (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  admin_id INT UNSIGNED NOT NULL,
+  action VARCHAR(100) NOT NULL,
+  description TEXT,
+  details JSON,
+  ip_address VARCHAR(45),
+  user_agent VARCHAR(500),
+  status ENUM('success','error','pending') NOT NULL DEFAULT 'success',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_admin_activity_logs_admin (admin_id),
+  INDEX idx_admin_activity_logs_created (created_at),
+  INDEX idx_admin_activity_logs_action (action),
+  CONSTRAINT fk_admin_activity_logs_admin FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 INSERT IGNORE INTO site_settings (setting_key, setting_value) VALUES

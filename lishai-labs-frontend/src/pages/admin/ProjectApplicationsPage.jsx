@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { BarChart3, Building2, ChevronRight, CircleUserRound, FileText, Globe2, LogOut, Menu, MessageSquareText, PenTool, Plus, Rocket, Settings, Sparkles, Trash2, Upload, X } from 'lucide-react';
+import { BarChart3, Building2, ChevronRight, CircleUserRound, FileText, Globe2, LogOut, Menu, MessageSquareText, PenTool, Plus, Rocket, Search, Settings, Sparkles, Trash2, Upload, X } from 'lucide-react';
 import { API, absoluteAssetUrl, authHeaders, notifyAdmin } from '../../shared/site';
 
 export function ProjectApplicationsPage() {
   const [applications, setApplications] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const loadApplications = () => {
     fetch(`${API}/project-applications`, { headers: authHeaders() })
       .then((response) => response.ok ? response.json() : [])
@@ -14,6 +15,19 @@ export function ProjectApplicationsPage() {
   useEffect(() => {
     loadApplications();
   }, []);
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredApplications = normalizedQuery
+    ? applications.filter((application) => [
+        application.name,
+        application.email,
+        application.project_type,
+        application.company,
+        application.brief_message,
+        application.budget,
+        application.timeline,
+        application.status,
+      ].some((field) => String(field || '').toLowerCase().includes(normalizedQuery)))
+    : applications;
   const updateStatus = async (id, status) => {
     const response = await fetch(`${API}/project-applications/${id}/status`, {
       method: 'PATCH',
@@ -25,10 +39,31 @@ export function ProjectApplicationsPage() {
   return (
     <>
       <div className="admin-page-heading"><div><span>Projects</span><h1>Project applications</h1></div></div>
+      <div className="admin-realtime-search" style={{ position: 'relative', display: 'flex', alignItems: 'center', marginBottom: '18px', maxWidth: '460px', width: '100%' }}>
+        <Search size={18} style={{ position: 'absolute', left: '14px', color: '#64748b', pointerEvents: 'none' }} />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search project applications by name, email, type, company or status..."
+          aria-label="Search project applications"
+          style={{ width: '100%', padding: '11px 40px 11px 42px', borderRadius: '10px', border: '1px solid #cbd5e1', background: '#fff', fontSize: '0.95rem', boxSizing: 'border-box' }}
+        />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => setSearchQuery('')}
+            aria-label="Clear project applications search"
+            style={{ position: 'absolute', right: '10px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
+          >
+            <X size={16} />
+          </button>
+        )}
+      </div>
       <div className="message-list">
-        {applications.length === 0
-          ? <div className="table-empty">No project applications yet.</div>
-          : applications.map((application) => (
+        {filteredApplications.length === 0
+          ? <div className="table-empty">{normalizedQuery ? `No project applications match "${searchQuery}".` : 'No project applications yet.'}</div>
+          : filteredApplications.map((application) => (
             <article key={application.id}>
               <div className="message-avatar">{application.name.charAt(0).toUpperCase()}</div>
               <div>
@@ -52,6 +87,7 @@ export function ProjectApplicationsPage() {
 
 export function OpportunityApplicationsPage() {
   const [applications, setApplications] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [savingId, setSavingId] = useState(null);
   const loadApplications = () => {
     fetch(`${API}/opportunity-applications`, { headers: authHeaders() })
@@ -62,6 +98,17 @@ export function OpportunityApplicationsPage() {
   useEffect(() => {
     loadApplications();
   }, []);
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredApplications = normalizedQuery
+    ? applications.filter((application) => [
+        application.name,
+        application.email,
+        application.phone,
+        application.opportunity_title,
+        application.description,
+        application.status,
+      ].some((field) => String(field || '').toLowerCase().includes(normalizedQuery)))
+    : applications;
   const updateStatus = async (id, status) => {
     setSavingId(id);
     try {
@@ -84,10 +131,31 @@ export function OpportunityApplicationsPage() {
   return (
     <>
       <div className="admin-page-heading"><div><span>Opportunities</span><h1>Opportunity applications</h1></div></div>
+      <div className="admin-realtime-search" style={{ position: 'relative', display: 'flex', alignItems: 'center', marginBottom: '18px', maxWidth: '460px', width: '100%' }}>
+        <Search size={18} style={{ position: 'absolute', left: '14px', color: '#64748b', pointerEvents: 'none' }} />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search applicants by name, email, phone, role or status..."
+          aria-label="Search opportunity applications"
+          style={{ width: '100%', padding: '11px 40px 11px 42px', borderRadius: '10px', border: '1px solid #cbd5e1', background: '#fff', fontSize: '0.95rem', boxSizing: 'border-box' }}
+        />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => setSearchQuery('')}
+            aria-label="Clear opportunity applications search"
+            style={{ position: 'absolute', right: '10px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
+          >
+            <X size={16} />
+          </button>
+        )}
+      </div>
       <div className="message-list">
-        {applications.length === 0
-          ? <div className="table-empty">No opportunity applications yet.</div>
-          : applications.map((application) => (
+        {filteredApplications.length === 0
+          ? <div className="table-empty">{normalizedQuery ? `No opportunity applications match "${searchQuery}".` : 'No opportunity applications yet.'}</div>
+          : filteredApplications.map((application) => (
             <article key={application.id}>
               <div className="message-avatar">{application.name.charAt(0).toUpperCase()}</div>
               <div>

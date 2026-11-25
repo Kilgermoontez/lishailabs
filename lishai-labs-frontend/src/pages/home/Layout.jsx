@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { ArrowRight, Menu, MessageCircle, Sparkles, X } from 'lucide-react';
 import { absoluteAssetUrl, externalPageUrl, useSiteSettings } from '../../shared/site';
 
@@ -79,6 +79,12 @@ export function Footer() {
 }
 
 export function PublicLayout({ children }) {
+  const location = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   return (
     <>
       <Header />

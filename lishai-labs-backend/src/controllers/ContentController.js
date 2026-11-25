@@ -1,5 +1,6 @@
 const pool = require('../config/database');
 const ContentModel = require('../models/ContentModel');
+const AdminModel = require('../models/AdminModel');
 const postModel = new ContentModel('posts');
 const projectModel = new ContentModel('projects');
 const opportunityModel = new ContentModel('opportunities');
@@ -32,7 +33,16 @@ const getPost = async (req, res) => {
 const createPost = async (req, res) => {
   try {
     const data = { ...req.body, slug: slugify(req.body.slug || req.body.title) };
-    res.status(201).json(await postModel.createPost(data));
+    const result = await postModel.createPost(data);
+    await AdminModel.logActivity(
+      req.admin.id,
+      'POST_CREATED',
+      `Created post: ${data.title}`,
+      { postId: result.id, title: data.title },
+      req.ip || req.connection.remoteAddress,
+      req.get('user-agent')
+    );
+    res.status(201).json(result);
   } catch (_) {
     res.status(500).json({ message: 'Unable to create post.' });
   }
@@ -41,15 +51,36 @@ const createPost = async (req, res) => {
 const updatePost = async (req, res) => {
   try {
     const data = { ...req.body, slug: slugify(req.body.slug || req.body.title) };
-    res.json(await postModel.updatePost(req.params.id, data));
+    const result = await postModel.updatePost(req.params.id, data);
+    await AdminModel.logActivity(
+      req.admin.id,
+      'POST_UPDATED',
+      `Updated post: ${data.title}`,
+      { postId: req.params.id, title: data.title },
+      req.ip || req.connection.remoteAddress,
+      req.get('user-agent')
+    );
+    res.json(result);
   } catch (_) {
     res.status(500).json({ message: 'Unable to update post.' });
   }
 };
 
 const deletePost = async (req, res) => {
-  await postModel.remove(req.params.id);
-  res.status(204).end();
+  try {
+    await postModel.remove(req.params.id);
+    await AdminModel.logActivity(
+      req.admin.id,
+      'POST_DELETED',
+      `Deleted post ID: ${req.params.id}`,
+      { postId: req.params.id },
+      req.ip || req.connection.remoteAddress,
+      req.get('user-agent')
+    );
+    res.status(204).end();
+  } catch (_) {
+    res.status(500).json({ message: 'Unable to delete post.' });
+  }
 };
 
 const listProjects = async (req, res) => {
@@ -78,7 +109,16 @@ const listProjects = async (req, res) => {
 const createProject = async (req, res) => {
   try {
     const data = { ...req.body, slug: slugify(req.body.slug || req.body.title) };
-    res.status(201).json(await projectModel.createProject(data));
+    const result = await projectModel.createProject(data);
+    await AdminModel.logActivity(
+      req.admin.id,
+      'PROJECT_CREATED',
+      `Created project: ${data.title}`,
+      { projectId: result.id, title: data.title },
+      req.ip || req.connection.remoteAddress,
+      req.get('user-agent')
+    );
+    res.status(201).json(result);
   } catch (_) {
     res.status(500).json({ message: 'Unable to create project.' });
   }
@@ -87,15 +127,36 @@ const createProject = async (req, res) => {
 const updateProject = async (req, res) => {
   try {
     const data = { ...req.body, slug: slugify(req.body.slug || req.body.title) };
-    res.json(await projectModel.updateProject(req.params.id, data));
+    const result = await projectModel.updateProject(req.params.id, data);
+    await AdminModel.logActivity(
+      req.admin.id,
+      'PROJECT_UPDATED',
+      `Updated project: ${data.title}`,
+      { projectId: req.params.id, title: data.title },
+      req.ip || req.connection.remoteAddress,
+      req.get('user-agent')
+    );
+    res.json(result);
   } catch (_) {
     res.status(500).json({ message: 'Unable to update project.' });
   }
 };
 
 const deleteProject = async (req, res) => {
-  await projectModel.remove(req.params.id);
-  res.status(204).end();
+  try {
+    await projectModel.remove(req.params.id);
+    await AdminModel.logActivity(
+      req.admin.id,
+      'PROJECT_DELETED',
+      `Deleted project ID: ${req.params.id}`,
+      { projectId: req.params.id },
+      req.ip || req.connection.remoteAddress,
+      req.get('user-agent')
+    );
+    res.status(204).end();
+  } catch (_) {
+    res.status(500).json({ message: 'Unable to delete project.' });
+  }
 };
 
 const getOpportunity = async (req, res) => {
@@ -157,7 +218,16 @@ const listOpportunities = async (req, res) => {
 const createOpportunity = async (req, res) => {
   try {
     const data = { ...req.body, slug: slugify(req.body.slug || req.body.title) };
-    res.status(201).json(await opportunityModel.createOpportunity(data));
+    const result = await opportunityModel.createOpportunity(data);
+    await AdminModel.logActivity(
+      req.admin.id,
+      'OPPORTUNITY_CREATED',
+      `Created opportunity: ${data.title}`,
+      { opportunityId: result.id, title: data.title },
+      req.ip || req.connection.remoteAddress,
+      req.get('user-agent')
+    );
+    res.status(201).json(result);
   } catch (_) {
     res.status(500).json({ message: 'Unable to create opportunity.' });
   }
@@ -166,15 +236,36 @@ const createOpportunity = async (req, res) => {
 const updateOpportunity = async (req, res) => {
   try {
     const data = { ...req.body, slug: slugify(req.body.slug || req.body.title) };
-    res.json(await opportunityModel.updateOpportunity(req.params.id, data));
+    const result = await opportunityModel.updateOpportunity(req.params.id, data);
+    await AdminModel.logActivity(
+      req.admin.id,
+      'OPPORTUNITY_UPDATED',
+      `Updated opportunity: ${data.title}`,
+      { opportunityId: req.params.id, title: data.title },
+      req.ip || req.connection.remoteAddress,
+      req.get('user-agent')
+    );
+    res.json(result);
   } catch (_) {
     res.status(500).json({ message: 'Unable to update opportunity.' });
   }
 };
 
 const deleteOpportunity = async (req, res) => {
-  await opportunityModel.remove(req.params.id);
-  res.status(204).end();
+  try {
+    await opportunityModel.remove(req.params.id);
+    await AdminModel.logActivity(
+      req.admin.id,
+      'OPPORTUNITY_DELETED',
+      `Deleted opportunity ID: ${req.params.id}`,
+      { opportunityId: req.params.id },
+      req.ip || req.connection.remoteAddress,
+      req.get('user-agent')
+    );
+    res.status(204).end();
+  } catch (_) {
+    res.status(500).json({ message: 'Unable to delete opportunity.' });
+  }
 };
 
 module.exports = {

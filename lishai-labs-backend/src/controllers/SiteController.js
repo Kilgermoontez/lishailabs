@@ -1,5 +1,6 @@
 const pool = require('../config/database');
 const { sendMail } = require('../services/mailer');
+const AdminModel = require('../models/AdminModel');
 const crypto = require('crypto');
 
 const getSettings = async (req, res) => {
@@ -13,6 +14,16 @@ const updateSettings = async (req, res) => {
     await pool.execute(
       'INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value)',
       [key, String(value)]
+    );
+  }
+  if (req.admin) {
+    await AdminModel.logActivity(
+      req.admin.id,
+      'SETTINGS_UPDATED',
+      'Updated site settings',
+      { keys: Object.keys(entries) },
+      req.ip || req.connection.remoteAddress,
+      req.get('user-agent')
     );
   }
   res.json({ message: 'Settings saved.' });
@@ -35,6 +46,16 @@ const updatePolicy = async (req, res) => {
      ON DUPLICATE KEY UPDATE title=VALUES(title), content=VALUES(content), updated_at=NOW()`,
     [req.params.type, title || req.params.type, content || '']
   );
+  if (req.admin) {
+    await AdminModel.logActivity(
+      req.admin.id,
+      'POLICY_UPDATED',
+      `Updated ${req.params.type} policy`,
+      { type: req.params.type },
+      req.ip || req.connection.remoteAddress,
+      req.get('user-agent')
+    );
+  }
   res.json({ message: 'Policy updated.' });
 };
 

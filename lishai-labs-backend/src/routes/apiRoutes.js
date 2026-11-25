@@ -74,9 +74,15 @@ const chatLimiter = rateLimit({ windowMs: 60 * 1000, limit: 20, standardHeaders:
 
 router.post('/auth/login', authLimiter, auth.login);
 router.post('/auth/verify-otp', authLimiter, auth.verifyOtp);
+router.post('/auth/request-password-reset', authLimiter, auth.requestPasswordReset);
+router.post('/auth/verify-reset-code', authLimiter, auth.verifyResetCode);
+router.post('/auth/reset-password', authLimiter, auth.resetPassword);
 router.get('/auth/me', requireAuth, auth.me);
 router.put('/auth/password', requireAuth, auth.updatePassword);
 router.put('/auth/profile', requireAuth, auth.updateProfile);
+router.post('/auth/avatar', requireAuth, upload.single('avatar'), auth.updateAvatar);
+router.get('/auth/activity-logs', requireAuth, auth.getActivityLogs);
+router.get('/auth/my-activity-logs', requireAuth, auth.getMyActivityLogs);
 
 router.get('/posts', content.listPosts);
 router.get('/posts/:slug', content.getPost);

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { BarChart3, Building2, ChevronRight, CircleUserRound, FileText, Globe2, LogOut, Menu, MessageSquareText, PenTool, Plus, Rocket, Settings, Sparkles, Trash2, Upload, X } from 'lucide-react';
+import { BarChart3, Building2, ChevronRight, CircleUserRound, FileText, Globe2, LogOut, Menu, MessageSquareText, PenTool, Plus, Rocket, Search, Settings, Sparkles, Trash2, Upload, X } from 'lucide-react';
 import { API, absoluteAssetUrl, authHeaders, notifyAdmin } from '../../shared/site';
 
 export function OpportunitiesManager() {
   const empty = { title: '', slug: '', description: '', location: '', type: 'General', work_mode: 'On-site', image: '', status: 'draft', application_limit: '' };
   const [items, setItems] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [showEditor, setShowEditor] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(empty);
@@ -13,6 +14,18 @@ export function OpportunitiesManager() {
   const [saving, setSaving] = useState(false);
   const load = () => fetch(`${API}/opportunities?limit=100`, { headers: authHeaders() }).then((r) => r.json()).then((d) => setItems(d.rows || [])).catch(() => setItems([]));
   useEffect(() => { load(); }, []);
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredItems = normalizedQuery
+    ? items.filter((item) => [
+        item.title,
+        item.slug,
+        item.type,
+        item.location,
+        item.work_mode,
+        item.status,
+        item.description,
+      ].some((field) => String(field || '').toLowerCase().includes(normalizedQuery)))
+    : items;
   const getRemainingApplications = (item) => {
     if (item.application_limit === null || item.application_limit === undefined || item.application_limit === '') {
       return null;
@@ -87,7 +100,28 @@ export function OpportunitiesManager() {
   return (
     <>
       <div className="admin-page-heading"><div><span>Careers & partnerships</span><h1>Opportunities</h1></div><button className="admin-primary" onClick={() => openEditor()}><Plus /> Add opportunity</button></div>
-      <div className="content-table"><div className="table-header"><span>Title</span><span>Type</span><span>Status</span><span>Actions</span></div>{items.length === 0 ? <div className="table-empty">No opportunities yet.</div> : items.map((item) => {
+      <div className="admin-realtime-search" style={{ position: 'relative', display: 'flex', alignItems: 'center', marginBottom: '18px', maxWidth: '460px', width: '100%' }}>
+        <Search size={18} style={{ position: 'absolute', left: '14px', color: '#64748b', pointerEvents: 'none' }} />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search opportunities by title, type, location or status..."
+          aria-label="Search opportunities"
+          style={{ width: '100%', padding: '11px 40px 11px 42px', borderRadius: '10px', border: '1px solid #cbd5e1', background: '#fff', fontSize: '0.95rem', boxSizing: 'border-box' }}
+        />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => setSearchQuery('')}
+            aria-label="Clear opportunities search"
+            style={{ position: 'absolute', right: '10px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
+          >
+            <X size={16} />
+          </button>
+        )}
+      </div>
+      <div className="content-table"><div className="table-header"><span>Title</span><span>Type</span><span>Status</span><span>Actions</span></div>{filteredItems.length === 0 ? <div className="table-empty">{normalizedQuery ? `No opportunities match "${searchQuery}".` : 'No opportunities yet.'}</div> : filteredItems.map((item) => {
         const remaining = getRemainingApplications(item);
         return (
           <div className="table-row" key={item.id}>

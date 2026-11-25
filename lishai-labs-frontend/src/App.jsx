@@ -13,6 +13,7 @@ import { MessagesPage } from './pages/admin/MessagesPage';
 import { ProjectApplicationsPage, OpportunityApplicationsPage } from './pages/admin/ProjectApplicationsPage';
 import { PoliciesPage } from './pages/admin/PoliciesPage';
 import { SettingsPage } from './pages/admin/SettingsPage';
+import { ActivityLogs } from './pages/admin/ActivityLogs';
 class RouteErrorBoundary extends Component {
   constructor(props) {
     super(props);
@@ -64,6 +65,7 @@ function AppRoutes() {
       <Route path="/admin/applications" element={<AdminProtected><AdminLayout><ProjectApplicationsPage /></AdminLayout></AdminProtected>} />
       <Route path="/admin/opportunity-applications" element={<AdminProtected><AdminLayout><OpportunityApplicationsPage /></AdminLayout></AdminProtected>} />
       <Route path="/admin/policies" element={<AdminProtected><AdminLayout><PoliciesPage /></AdminLayout></AdminProtected>} />
+      <Route path="/admin/activity-logs" element={<AdminProtected><AdminLayout><ActivityLogs /></AdminLayout></AdminProtected>} />
       <Route path="/admin/settings" element={<AdminProtected><AdminLayout><SettingsPage /></AdminLayout></AdminProtected>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

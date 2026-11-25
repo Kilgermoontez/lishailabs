@@ -6,9 +6,13 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
+const { initializeDatabase } = require('./config/dbInit');
 const apiRoutes = require('./routes/apiRoutes');
 
 const app = express();
+
+// Initialize database on startup
+initializeDatabase().catch(console.error);
 
 const uploadsDir = process.env.UPLOAD_DIR
   ? path.resolve(process.env.UPLOAD_DIR)
@@ -19,14 +23,17 @@ fs.mkdirSync(uploadsDir, { recursive: true });
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
-const allowedOrigins = [
-  process.env.CLIENT_ORIGIN || 'http://localhost:5173',
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
-];
+const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:5173').split(',').map(o => o.trim());
+
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    if (!origin) return callback(null, true);
+    
+    const isLocalhost = origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:');
+    if (isLocalhost) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    
     return callback(new Error('Origin not allowed by CORS'));
   },
   credentials: true,
