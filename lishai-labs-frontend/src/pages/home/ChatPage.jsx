@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Send, Sparkles, UserRound, X } from 'lucide-react';
+import { ArrowLeft, Send, Sparkles, UserRound } from 'lucide-react';
 import { API } from '../../shared/site';
 import { Header } from './Layout';
 
@@ -180,6 +180,14 @@ export function ChatPage() {
     }, 120);
   };
 
+  const scrollSupportToBottom = () => {
+    window.setTimeout(() => {
+      if (supportMessagesRef.current) {
+        supportMessagesRef.current.scrollTop = supportMessagesRef.current.scrollHeight;
+      }
+    }, 120);
+  };
+
   return (
     <div
       ref={viewportRef}
@@ -294,7 +302,14 @@ export function ChatPage() {
           overflow-wrap: anywhere;
         }
 
-        /* In-chat human escalation bar & drawer (directly above typing space) */
+        .chat-viewport .chat-page-message small {
+          display: block;
+          margin-bottom: 0.2rem;
+          font-size: 0.72rem;
+          opacity: 0.75;
+        }
+
+        /* In-chat human escalation bar (directly above typing space) */
         .chat-viewport .inchat-human-zone {
           flex-shrink: 0;
           border-top: 1px solid rgba(15, 23, 42, 0.08);
@@ -337,87 +352,92 @@ export function ChatPage() {
           background: #eff6ff;
         }
 
-        .chat-viewport .inchat-human-panel {
-          padding: 0.8rem 0.95rem 0.9rem;
-          max-height: 290px;
-          overflow-y: auto;
-          -webkit-overflow-scrolling: touch;
-          display: flex;
-          flex-direction: column;
-          gap: 0.7rem;
-          box-sizing: border-box;
-        }
-
-        .chat-viewport .inchat-human-panel-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 0.5rem;
-        }
-
-        .chat-viewport .inchat-human-panel-title {
+        /* Dedicated Human Support page styles */
+        .chat-viewport .back-to-ai-button {
+          align-self: flex-start;
           display: inline-flex;
           align-items: center;
           gap: 0.45rem;
-          font-size: 0.9rem;
-          font-weight: 600;
-          color: #0f172a;
-        }
-
-        .chat-viewport .inchat-human-close {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 30px;
-          height: 30px;
+          padding: 0.55rem 0.95rem;
           border-radius: 999px;
-          border: 1px solid rgba(15, 23, 42, 0.12);
+          border: 1px solid #cbd5e1;
           background: #ffffff;
-          color: #334155;
+          color: #1e293b;
+          font-size: 0.88rem;
+          font-weight: 600;
           cursor: pointer;
         }
 
-        .chat-viewport .human-agent-form,
-        .chat-viewport .human-agent-thread {
+        .chat-viewport .back-to-ai-button:hover {
+          background: #f1f5f9;
+        }
+
+        .chat-viewport .human-header-back {
+          margin-left: auto;
+          flex-shrink: 0;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          padding: 0.4rem 0.75rem;
+          border-radius: 999px;
+          border: 1px solid rgba(255, 255, 255, 0.32);
+          background: rgba(255, 255, 255, 0.14);
+          color: #ffffff;
+          font-size: 0.8rem;
+          font-weight: 600;
+          cursor: pointer;
+          white-space: nowrap;
+        }
+
+        .chat-viewport .human-header-back:hover {
+          background: rgba(255, 255, 255, 0.24);
+        }
+
+        .chat-viewport .human-page-form-wrap {
+          flex: 1 1 auto;
+          min-height: 0;
+          overflow-y: auto;
+          overscroll-behavior: contain;
+          -webkit-overflow-scrolling: touch;
+          padding: 1.25rem;
+          background: #f7f9fd;
+          box-sizing: border-box;
+        }
+
+        .chat-viewport .human-agent-form {
           display: flex;
           flex-direction: column;
-          gap: 0.65rem;
+          gap: 0.9rem;
           margin: 0;
+          padding: 1.25rem;
+          border: 1px solid #e1e6ef;
+          border-radius: 14px;
+          background: #ffffff;
         }
 
         .chat-viewport .human-agent-form label {
           display: flex;
           flex-direction: column;
-          gap: 0.3rem;
-          font-size: 0.84rem;
+          gap: 0.35rem;
+          font-size: 0.85rem;
+          font-weight: 600;
           color: #334155;
         }
 
-        .chat-viewport .human-thread-messages {
-          max-height: 150px;
-          overflow-y: auto;
-          display: flex;
-          flex-direction: column;
-          gap: 0.55rem;
-          padding: 0.25rem;
-          -webkit-overflow-scrolling: touch;
-        }
-
-        .chat-viewport .human-thread-form {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-
-        .chat-viewport .human-thread-form input,
         .chat-viewport .human-agent-form input,
         .chat-viewport .human-agent-form textarea {
+          width: 100%;
+          box-sizing: border-box;
           font-size: 16px;
         }
 
-        .chat-viewport .human-thread-form input {
-          flex: 1 1 auto;
-          min-width: 0;
+        .chat-viewport .human-page-status {
+          flex-shrink: 0;
+          margin: 0;
+          padding: 0.45rem 1rem;
+          border-top: 1px solid #edf0f5;
+          background: #f8fafc;
+          font-size: 0.82rem;
         }
 
         .chat-viewport .chat-page-form {
@@ -478,6 +498,10 @@ export function ChatPage() {
             line-height: 1.45 !important;
           }
 
+          .chat-viewport .back-to-ai-button {
+            display: none;
+          }
+
           .chat-viewport .chat-page-shell {
             flex: 1 1 auto;
             min-height: 0;
@@ -492,13 +516,17 @@ export function ChatPage() {
             gap: 0.75rem;
           }
 
-          .chat-viewport .inchat-human-banner {
-            padding: 0.55rem 0.75rem;
+          .chat-viewport .human-page-form-wrap {
+            padding: 0.85rem;
           }
 
-          .chat-viewport .inchat-human-panel {
-            padding: 0.75rem;
-            max-height: 240px;
+          .chat-viewport .human-agent-form {
+            padding: 1rem;
+            gap: 0.75rem;
+          }
+
+          .chat-viewport .inchat-human-banner {
+            padding: 0.55rem 0.75rem;
           }
 
           .chat-viewport .chat-page-form {
@@ -534,24 +562,120 @@ export function ChatPage() {
       `}</style>
       <Header />
       <main className="chat-main">
-        <section className="chat-page">
-          <div className="chat-page-heading">
-            <span className="section-kicker">Lish AI Assistant</span>
-            <h1>Ask us anything about Lish AI Labs.</h1>
-            <p>Get answers from our services, projects, opportunities and company information.</p>
-          </div>
-          <div className="chat-page-shell">
-            <div className="chat-page-header"><Sparkles size={20} /><div><strong>Lish AI Assistant</strong><span>Online</span></div></div>
-            <div ref={chatMessagesRef} className="chat-page-messages" role="log" aria-live="polite">
-              {messages.map((message, index) => (
-                <div key={index} className={`chat-page-message ${message.role}`}>{message.content}</div>
-              ))}
-              {busy && <div className="chat-page-message assistant">Thinking...</div>}
+        {showHumanForm ? (
+          <section className="chat-page human-support-page">
+            <div className="chat-page-heading">
+              <span className="section-kicker">Human Support</span>
+              <h1>Speak directly with our support team.</h1>
+              <p>Share your question below and a member of the Lish AI Labs team will follow up with you here.</p>
+              <button
+                type="button"
+                className="back-to-ai-button"
+                onClick={() => setShowHumanForm(false)}
+              >
+                <ArrowLeft size={16} /> Back to AI Assistant
+              </button>
             </div>
+            <div className="chat-page-shell">
+              <div className="chat-page-header">
+                <UserRound size={20} />
+                <div>
+                  <strong>Human Support</strong>
+                  <span>{conversationKey ? 'Support conversation active' : 'Connect with our team'}</span>
+                </div>
+                <button
+                  type="button"
+                  className="human-header-back"
+                  onClick={() => setShowHumanForm(false)}
+                >
+                  <ArrowLeft size={15} /> AI Chat
+                </button>
+              </div>
 
-            {showHumanOffer && (
-              <div className="inchat-human-zone">
-                {!showHumanForm ? (
+              {conversationKey ? (
+                <>
+                  <div ref={supportMessagesRef} className="chat-page-messages" role="log" aria-live="polite">
+                    {supportMessages.length === 0 ? (
+                      <div className="chat-page-message assistant">
+                        <small>Support team</small>
+                        Your conversation is open. Send a message below and our team will reply here.
+                      </div>
+                    ) : (
+                      supportMessages.map((message) => (
+                        <div key={message.id} className={`chat-page-message ${message.sender === 'admin' ? 'assistant' : 'user'}`}>
+                          <small>{message.sender === 'admin' ? 'Support team' : 'You'}</small>
+                          {message.message}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  {humanStatus && <p className="form-status human-page-status">{humanStatus}</p>}
+                  <form className="chat-page-form" onSubmit={sendSupportReply}>
+                    <input
+                      required
+                      value={supportReply}
+                      onChange={(event) => setSupportReply(event.target.value)}
+                      onFocus={scrollSupportToBottom}
+                      placeholder="Reply to support..."
+                      aria-label="Support message"
+                    />
+                    <button type="submit" aria-label="Send reply"><Send /></button>
+                  </form>
+                </>
+              ) : (
+                <div className="human-page-form-wrap">
+                  <form className="human-agent-form" onSubmit={requestHuman}>
+                    <label>
+                      Your name
+                      <input
+                        required
+                        value={humanForm.name}
+                        onChange={(event) => setHumanForm({ ...humanForm, name: event.target.value })}
+                      />
+                    </label>
+                    <label>
+                      Email
+                      <input
+                        type="email"
+                        required
+                        value={humanForm.email}
+                        onChange={(event) => setHumanForm({ ...humanForm, email: event.target.value })}
+                      />
+                    </label>
+                    <label>
+                      How can we help?
+                      <textarea
+                        required
+                        rows={4}
+                        value={humanForm.message}
+                        onChange={(event) => setHumanForm({ ...humanForm, message: event.target.value })}
+                      />
+                    </label>
+                    <button type="submit" className="button button-primary">Send to support</button>
+                    {humanStatus && <p className="form-status">{humanStatus}</p>}
+                  </form>
+                </div>
+              )}
+            </div>
+          </section>
+        ) : (
+          <section className="chat-page">
+            <div className="chat-page-heading">
+              <span className="section-kicker">Lish AI Assistant</span>
+              <h1>Ask us anything about Lish AI Labs.</h1>
+              <p>Get answers from our services, projects, opportunities and company information.</p>
+            </div>
+            <div className="chat-page-shell">
+              <div className="chat-page-header"><Sparkles size={20} /><div><strong>Lish AI Assistant</strong><span>Online</span></div></div>
+              <div ref={chatMessagesRef} className="chat-page-messages" role="log" aria-live="polite">
+                {messages.map((message, index) => (
+                  <div key={index} className={`chat-page-message ${message.role}`}>{message.content}</div>
+                ))}
+                {busy && <div className="chat-page-message assistant">Thinking...</div>}
+              </div>
+
+              {showHumanOffer && (
+                <div className="inchat-human-zone">
                   <div className="inchat-human-banner">
                     <span className="inchat-human-prompt">
                       {conversationKey ? 'Your support chat is active.' : 'Need help from our team?'}
@@ -564,63 +688,22 @@ export function ChatPage() {
                       <UserRound size={16} /> {conversationKey ? 'Open human chat' : 'Speak to a human'}
                     </button>
                   </div>
-                ) : (
-                  <div className="inchat-human-panel">
-                    <div className="inchat-human-panel-header">
-                      <span className="inchat-human-panel-title">
-                        <UserRound size={16} /> Human Support
-                      </span>
-                      <button
-                        type="button"
-                        className="inchat-human-close"
-                        onClick={() => setShowHumanForm(false)}
-                        aria-label="Close human support"
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                    {conversationKey ? (
-                      <div className="human-agent-thread">
-                        <div ref={supportMessagesRef} className="human-thread-messages">
-                          {supportMessages.map((message) => (
-                            <div key={message.id} className={`chat-page-message ${message.sender === 'admin' ? 'assistant' : 'user'}`}>
-                              <small>{message.sender === 'admin' ? 'Support team' : 'You'}</small>
-                              {message.message}
-                            </div>
-                          ))}
-                        </div>
-                        <form className="human-thread-form" onSubmit={sendSupportReply}>
-                          <input required value={supportReply} onChange={(event) => setSupportReply(event.target.value)} placeholder="Reply to support..." />
-                          <button type="submit" className="button button-primary">Send</button>
-                        </form>
-                        {humanStatus && <p className="form-status">{humanStatus}</p>}
-                      </div>
-                    ) : (
-                      <form className="human-agent-form" onSubmit={requestHuman}>
-                        <label>Your name<input required value={humanForm.name} onChange={(event) => setHumanForm({ ...humanForm, name: event.target.value })} /></label>
-                        <label>Email<input type="email" required value={humanForm.email} onChange={(event) => setHumanForm({ ...humanForm, email: event.target.value })} /></label>
-                        <label>How can we help?<textarea required rows={2} value={humanForm.message} onChange={(event) => setHumanForm({ ...humanForm, message: event.target.value })} /></label>
-                        <button type="submit" className="button button-primary">Send to support</button>
-                        {humanStatus && <p className="form-status">{humanStatus}</p>}
-                      </form>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+                </div>
+              )}
 
-            <form className="chat-page-form" onSubmit={send}>
-              <input
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                onFocus={scrollChatToBottom}
-                placeholder="Ask about Lish AI Labs..."
-                aria-label="Chat message"
-              />
-              <button type="submit" disabled={busy} aria-label="Send message"><Send /></button>
-            </form>
-          </div>
-        </section>
+              <form className="chat-page-form" onSubmit={send}>
+                <input
+                  value={input}
+                  onChange={(event) => setInput(event.target.value)}
+                  onFocus={scrollChatToBottom}
+                  placeholder="Ask about Lish AI Labs..."
+                  aria-label="Chat message"
+                />
+                <button type="submit" disabled={busy} aria-label="Send message"><Send /></button>
+              </form>
+            </div>
+          </section>
+        )}
       </main>
     </div>
   );
