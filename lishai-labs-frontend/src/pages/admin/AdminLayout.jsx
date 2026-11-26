@@ -5,7 +5,9 @@ import { API, absoluteAssetUrl, authHeaders } from '../../shared/site';
 
 export function AdminProtected({ children }) {
   const token = localStorage.getItem('lishai_token');
-  return token ? children : <Navigate to="/admin/login" replace />;
+  const admin = JSON.parse(localStorage.getItem('lishai_admin') || '{}');
+  if (!token) return <Navigate to="/admin/login" replace />;
+  return admin.must_reset_password ? <Navigate to="/admin/change-password" replace /> : children;
 }
 
 export function AdminLayout({ children }) {

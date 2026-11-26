@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export default function PasswordInput({ value, onChange, placeholder = 'Password', name = 'password', required = false, className = '' }) {
+export default function PasswordInput({ value, onChange, placeholder = 'Password', name = 'password', required = false, className = '', minLength, autoComplete }) {
   const [showPassword, setShowPassword] = useState(false);
 
   const togglePasswordVisibility = () => {
@@ -16,6 +16,8 @@ export default function PasswordInput({ value, onChange, placeholder = 'Password
         placeholder={placeholder}
         name={name}
         required={required}
+        minLength={minLength}
+        autoComplete={autoComplete}
         className={className}
         style={{ paddingRight: '40px' }}
       />

@@ -5,6 +5,7 @@ import { HomePage } from './pages/home/HomePage';
 import { ChatPage } from './pages/home/ChatPage';
 import { SolutionsPage, ProjectsPage, AboutPage, InsightsPage, NewsPage, OpportunitiesPage, OpportunityDetailPage, ApplyProjectPage, PolicyPage, ContactPage, DemoPage } from './pages/home/PublicPages';
 import { AdminLogin } from './pages/auth/AdminLogin';
+import { FirstPasswordChange } from './pages/auth/FirstPasswordChange';
 import { AdminLayout, AdminProtected } from './pages/admin/AdminLayout';
 import { AdminOverview } from './pages/admin/AdminOverview';
 import { CrudManager } from './pages/admin/CrudManager';
@@ -57,6 +58,7 @@ function AppRoutes() {
       <Route path="/terms" element={<PolicyPage type="terms" />} />
       <Route path="/cookies" element={<PolicyPage type="cookies" />} />
       <Route path="/admin/login" element={<AdminLogin />} />
+      <Route path="/admin/change-password" element={<FirstPasswordChange />} />
       <Route path="/admin" element={<AdminProtected><AdminLayout><AdminOverview /></AdminLayout></AdminProtected>} />
       <Route path="/admin/posts" element={<AdminProtected><AdminLayout><CrudManager type="posts" /></AdminLayout></AdminProtected>} />
       <Route path="/admin/projects" element={<AdminProtected><AdminLayout><CrudManager type="projects" /></AdminLayout></AdminProtected>} />

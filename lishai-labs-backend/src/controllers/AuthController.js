@@ -10,11 +10,7 @@ const login = async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ message: 'Email and password are required.' });
 
-    if (email.toLowerCase() !== 'masakarobert69@gmail.com') {
-      return res.status(403).json({ message: 'This account is not authorized to manage Lishai Labs.' });
-    }
-
-    const admin = await AdminModel.findByEmail(email.toLowerCase());
+    const admin = await AdminModel.findByEmail(email.trim().toLowerCase());
     if (!admin) return res.status(401).json({ message: 'Invalid credentials.' });
 
     const valid = await bcrypt.compare(password, admin.password_hash);
@@ -27,12 +23,13 @@ const login = async (req, res) => {
       'INSERT INTO admin_otps (admin_id, code_hash, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE))',
       [admin.id, codeHash]
     );
-    await sendMail({
+    const delivery = await sendMail({
       to: admin.email,
       subject: 'Lish AI Labs admin login verification',
       text: `Your administrator verification code is ${code}. It expires in 10 minutes.`,
       html: `<p>Your administrator verification code is:</p><h2 style="letter-spacing:6px">${code}</h2><p>It expires in 10 minutes.</p>`,
     });
+    if (delivery.skipped) return res.status(503).json({ message: 'Email verification is unavailable. Contact an administrator.' });
     res.json({ otpRequired: true, email: admin.email, message: 'A verification code was sent to your administrator email.' });
   } catch (error) {
     console.error(error);
@@ -82,7 +79,7 @@ const verifyOtp = async (req, res) => {
     
     res.json({
       token,
-      admin: { id: admin.id, name: admin.name, email: admin.email, role: admin.role, avatar: admin.avatar },
+      admin: { id: admin.id, name: admin.name, email: admin.email, role: admin.role, avatar: admin.avatar, must_reset_password: admin.must_reset_password },
     });
   } catch (error) {
     console.error(error);
@@ -107,6 +104,9 @@ const updatePassword = async (req, res) => {
     const admin = await AdminModel.findByEmail(req.admin.email);
     if (!admin || !(await bcrypt.compare(currentPassword, admin.password_hash))) {
       return res.status(400).json({ message: 'Current password is incorrect.' });
+    }
+    if (newPassword.toLowerCase() === admin.email.toLowerCase() || await bcrypt.compare(newPassword, admin.password_hash)) {
+      return res.status(400).json({ message: 'Choose a new password different from your email and current password.' });
     }
 
     await AdminModel.updatePassword(admin.id, await bcrypt.hash(newPassword, 12));
@@ -199,7 +199,14 @@ const resetPassword = async (req, res) => {
     
     const reset = rows[0];
     if (!reset) return res.status(400).json({ message: 'The reset code has expired. Please request a new one.' });
-    if (reset.code_hash !== codeHash) return res.status(401).json({ message: 'Invalid reset code.' });
+    if (reset.attempts >= 5) return res.status(429).json({ message: 'Too many incorrect attempts. Please request a new reset code.' });
+    if (reset.code_hash !== codeHash) {
+      await pool.execute('UPDATE admin_password_resets SET attempts=attempts+1 WHERE id=?', [reset.id]);
+      return res.status(401).json({ message: 'Invalid reset code.' });
+    }
+    if (newPassword.toLowerCase() === admin.email.toLowerCase() || await bcrypt.compare(newPassword, admin.password_hash)) {
+      return res.status(400).json({ message: 'Choose a new password different from your email and current password.' });
+    }
 
     const passwordHash = await bcrypt.hash(newPassword, 12);
     await AdminModel.updatePassword(admin.id, passwordHash);

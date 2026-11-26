@@ -6,7 +6,7 @@ import PasswordInput from '../../shared/PasswordInput';
 
 export function AdminLogin() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: 'masakarobert69@gmail.com', password: '' });
+  const [form, setForm] = useState({ email: '', password: '' });
   const [otp, setOtp] = useState('');
   const [otpEmail, setOtpEmail] = useState('');
   const [error, setError] = useState('');
@@ -41,7 +41,7 @@ export function AdminLogin() {
       }
       localStorage.setItem('lishai_token', data.token);
       localStorage.setItem('lishai_admin', JSON.stringify(data.admin));
-      navigate('/admin');
+      navigate(data.admin.must_reset_password ? '/admin/change-password' : '/admin');
     } catch (error) { setError(error.message); }
     finally { setLoading(false); }
   };
@@ -60,7 +60,7 @@ export function AdminLogin() {
       if (!response.ok) throw new Error(data.message);
       localStorage.setItem('lishai_token', data.token);
       localStorage.setItem('lishai_admin', JSON.stringify(data.admin));
-      navigate('/admin');
+      navigate(data.admin.must_reset_password ? '/admin/change-password' : '/admin');
     } catch (error) { setError(error.message); }
     finally { setLoading(false); }
   };

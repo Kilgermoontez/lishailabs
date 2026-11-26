@@ -22,6 +22,11 @@ async function initializeDatabase() {
         if (!error.message.includes('already exists')) {
           console.error('SQL Error:', error.message, '\nStatement:', statement);
         }
+
+        const [resetColumns] = await pool.query("SHOW COLUMNS FROM admins LIKE 'must_reset_password'");
+        if (!resetColumns.length) {
+          await pool.query('ALTER TABLE admins ADD COLUMN must_reset_password TINYINT(1) NOT NULL DEFAULT 0');
+        }
       }
     }
     

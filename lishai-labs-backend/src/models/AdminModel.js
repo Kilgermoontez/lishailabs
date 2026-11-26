@@ -8,14 +8,14 @@ const AdminModel = {
 
   async findById(id) {
     const [rows] = await pool.execute(
-      'SELECT id, name, email, role, avatar, created_at, updated_at FROM admins WHERE id = ? LIMIT 1',
+      'SELECT id, name, email, role, avatar, must_reset_password, created_at, updated_at FROM admins WHERE id = ? LIMIT 1',
       [id]
     );
     return rows[0] || null;
   },
 
   async updatePassword(id, passwordHash) {
-    await pool.execute('UPDATE admins SET password_hash = ?, updated_at = NOW() WHERE id = ?', [passwordHash, id]);
+    await pool.execute('UPDATE admins SET password_hash = ?, must_reset_password = 0, updated_at = NOW() WHERE id = ?', [passwordHash, id]);
   },
 
   async updateProfile(id, { name, email }) {

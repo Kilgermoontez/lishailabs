@@ -20,6 +20,10 @@ const main = async () => {
 
   const schema = fs.readFileSync(path.join(__dirname, '../../sql/schema.sql'), 'utf8');
   await connection.query(schema);
+  const [resetColumns] = await connection.query("SHOW COLUMNS FROM admins LIKE 'must_reset_password'");
+  if (!resetColumns.length) {
+    await connection.query('ALTER TABLE admins ADD COLUMN must_reset_password TINYINT(1) NOT NULL DEFAULT 0');
+  }
 
   const [limitColumns] = await connection.query(
     "SHOW COLUMNS FROM opportunities LIKE 'application_limit'"
@@ -65,20 +69,22 @@ const main = async () => {
     }
   }
 
-  const adminEmail = 'masakarobert69@gmail.com';
-  const adminPassword = 'Godisgood@966';
-  await connection.execute('DELETE FROM admins WHERE LOWER(email) <> ?', [adminEmail]);
-  const passwordHash = await bcrypt.hash(adminPassword, 12);
-  await connection.execute(
-    `INSERT INTO admins (name, email, password_hash, role)
-     VALUES (?, ?, ?, 'super_admin')
-     ON DUPLICATE KEY UPDATE name=VALUES(name), password_hash=VALUES(password_hash), role='super_admin', updated_at=NOW()`,
-    ['Masaka Robert', adminEmail, passwordHash]
-  );
+  const { ADMIN_NAME, ADMIN_EMAIL, ADMIN_PASSWORD } = process.env;
+  if (ADMIN_NAME && ADMIN_EMAIL && ADMIN_PASSWORD) {
+    const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, 12);
+    await connection.execute(
+      `INSERT INTO admins (name, email, password_hash, role, must_reset_password)
+       VALUES (?, ?, ?, 'super_admin', 1)
+       ON DUPLICATE KEY UPDATE id=id`,
+      [ADMIN_NAME, ADMIN_EMAIL.trim().toLowerCase(), passwordHash]
+    );
+  } else if (ADMIN_NAME || ADMIN_EMAIL || ADMIN_PASSWORD) {
+    throw new Error('Set ADMIN_NAME, ADMIN_EMAIL, and ADMIN_PASSWORD together to create a bootstrap administrator.');
+  }
 
   await connection.end();
   console.log(`Database initialized: ${database}`);
-  console.log(`Admin login: ${adminEmail} / ${adminPassword}`);
+  console.log('Existing administrator accounts were preserved.');
 };
 
 main().catch((error) => {
